@@ -5,9 +5,9 @@ import { withSentryConfig } from "@sentry/nextjs"
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 const appDomain = appUrl.replace(/^https?:\/\//, "")
 
+const isHttps = appUrl.startsWith("https://")
+
 const nextConfig: NextConfig = {
-  poweredByHeader: false,
-  compress: true,
   output: "standalone",
   eslint: {
     ignoreDuringBuilds: true,
@@ -65,8 +65,8 @@ const nextConfig: NextConfig = {
       "base-uri 'self'",
       // Form action: self
       "form-action 'self'",
-      // Upgrade insecure requests di production
-      ...(isDev ? [] : ["upgrade-insecure-requests"]),
+      // Upgrade insecure requests hanya jika prod dan menggunakan https
+      ...(isDev || !isHttps ? [] : ["upgrade-insecure-requests"]),
     ]
 
     const headers = [
@@ -97,8 +97,8 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
-          // HSTS — hanya di production
-          ...(isDev
+          // HSTS — hanya di production dengan https
+          ...(isDev || !isHttps
             ? []
             : [
                 {
