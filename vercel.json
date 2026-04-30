@@ -1,0 +1,126 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "prisma generate && next build",
+  "installCommand": "npm ci",
+  "regions": ["sin1"],
+
+  "env": {
+    "DATABASE_URL": "@database-url",
+    "DIRECT_URL": "@direct-url",
+    "NEXTAUTH_SECRET": "@nextauth-secret",
+    "NEXTAUTH_URL": "@nextauth-url",
+    "GOOGLE_CLIENT_ID": "@google-client-id",
+    "GOOGLE_CLIENT_SECRET": "@google-client-secret",
+    "RESEND_API_KEY": "@resend-api-key",
+    "MUX_TOKEN_ID": "@mux-token-id",
+    "MUX_TOKEN_SECRET": "@mux-token-secret",
+    "MUX_WEBHOOK_SECRET": "@mux-webhook-secret",
+    "R2_ENDPOINT": "@r2-endpoint",
+    "R2_ACCESS_KEY_ID": "@r2-access-key-id",
+    "R2_SECRET_ACCESS_KEY": "@r2-secret-access-key",
+    "R2_BUCKET_NAME": "@r2-bucket-name",
+    "R2_PUBLIC_URL": "@r2-public-url",
+    "MIDTRANS_SERVER_KEY": "@midtrans-server-key",
+    "MIDTRANS_CLIENT_KEY": "@midtrans-client-key",
+    "PUSHER_APP_ID": "@pusher-app-id",
+    "PUSHER_KEY": "@pusher-key",
+    "PUSHER_SECRET": "@pusher-secret",
+    "PUSHER_CLUSTER": "@pusher-cluster",
+    "UPSTASH_REDIS_REST_URL": "@upstash-redis-rest-url",
+    "UPSTASH_REDIS_REST_TOKEN": "@upstash-redis-rest-token",
+    "SENTRY_DSN": "@sentry-dsn",
+    "SENTRY_ORG": "@sentry-org",
+    "SENTRY_PROJECT": "@sentry-project",
+    "SENTRY_AUTH_TOKEN": "@sentry-auth-token",
+    "CRON_SECRET": "@cron-secret",
+    "NEXT_PUBLIC_APP_URL": "@next-public-app-url",
+    "NEXT_PUBLIC_PUSHER_KEY": "@next-public-pusher-key",
+    "NEXT_PUBLIC_PUSHER_CLUSTER": "@next-public-pusher-cluster",
+    "NEXT_PUBLIC_MIDTRANS_CLIENT_KEY": "@next-public-midtrans-client-key",
+    "NEXT_PUBLIC_SENTRY_DSN": "@next-public-sentry-dsn"
+  },
+
+  "crons": [
+    {
+      "path": "/api/cron/subscription-check",
+      "schedule": "0 1 * * *"
+    }
+  ],
+
+  "functions": {
+    "app/api/**": {
+      "maxDuration": 30
+    },
+    "app/api/tryout/sesi/[sessionId]/jawab/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/tryout/sesi/[sessionId]/selesai/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/tryout/sesi/[sessionId]/route.ts": {
+      "maxDuration": 60
+    }
+  },
+
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains; preload"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate"
+        }
+      ]
+    }
+  ],
+
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.(?<domain>.*)"
+        }
+      ],
+      "destination": "https://:domain/:path*",
+      "permanent": true
+    }
+  ],
+
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    }
+  ]
+}

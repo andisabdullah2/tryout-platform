@@ -1,0 +1,698 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl digunakan saat DATABASE_URL adalah Prisma Accelerate URL (prisma://)
+  // Prisma Migrate membutuhkan koneksi langsung ke database
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// DOMAIN: AUTENTIKASI & PENGGUNA
+// ============================================================
+
+enum Role {
+  ADMIN
+  INSTRUKTUR
+  PESERTA
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  password      String?   // null jika login via OAuth
+  role          Role      @default(PESERTA)
+  isActive      Boolean   @default(true)
+  darkMode      Boolean   @default(false)
+  useAlias      Boolean   @default(false) // privasi leaderboard
+  alias         String?
+  loginAttempts Int       @default(0)
+  lockedUntil   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth relations
+  accounts  Account[]
+  sessions  Session[]
+
+  // Platform relations
+  tryoutSessions     TryoutSession[]
+  enrollments        Enrollment[]
+  transactions       Transaction[]
+  subscriptions      Subscription[]
+  notifications      Notification[]
+  videoProgress      VideoProgress[]
+  leaderboardEntries LeaderboardEntry[]
+  badges             UserBadge[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// DOMAIN: BANK SOAL
+// ============================================================
+
+enum KategoriUjian {
+  CPNS_SKD
+  SEKDIN
+  UTBK_SNBT
+}
+
+enum SubtesType {
+  // CPNS SKD
+  TWK
+  TIU
+  TKP
+  // UTBK/SNBT
+  TPS_PENALARAN_UMUM
+  TPS_PPU
+  TPS_PBM
+  TPS_PK
+  LITERASI_IND
+  LITERASI_ENG
+  PENALARAN_MATEMATIKA
+  // Sekdin & umum
+  UMUM
+  MATEMATIKA
+  BAHASA_INDONESIA
+  BAHASA_INGGRIS
+  PENGETAHUAN_UMUM
+  WAWASAN_KEBANGSAAN
+}
+
+enum TingkatKesulitan {
+  MUDAH
+  SEDANG
+  SULIT
+}
+
+enum TipeSoal {
+  PILIHAN_GANDA // 4-5 opsi, 1 jawaban benar
+  PILIHAN_GANDA_KOMPLEKS // benar/salah per pernyataan
+  ISIAN_SINGKAT
+}
+
+model Soal {
+  id               String           @id @default(cuid())
+  konten           String           @db.Text // mendukung Markdown + LaTeX
+  gambarUrl        String?
+  tipe             TipeSoal         @default(PILIHAN_GANDA)
+  kategori         KategoriUjian
+  subtes           SubtesType
+  topik            String
+  tingkatKesulitan TingkatKesulitan @default(SEDANG)
+  pembahasanTeks   String?          @db.Text
+  pembahasanVideoUrl String?
+  isActive         Boolean          @default(true)
+  createdById      String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Statistik soal
+  totalDijawab Int @default(0)
+  totalBenar   Int @default(0)
+
+  opsi           OpsiJawaban[]
+  paketSoal      PaketTryoutSoal[]
+  jawabanPeserta JawabanPeserta[]
+
+  @@index([kategori, subtes])
+  @@index([topik])
+  @@index([tingkatKesulitan])
+}
+
+model OpsiJawaban {
+  id       String  @id @default(cuid())
+  soalId   String
+  label    String // "A", "B", "C", "D", "E"
+  konten   String  @db.Text
+  isBenar  Boolean @default(false)
+  // Untuk TKP: nilai 1-5
+  nilaiTkp Int?
+
+  soal Soal @relation(fields: [soalId], references: [id], onDelete: Cascade)
+
+  @@index([soalId])
+}
+
+// ============================================================
+// DOMAIN: PAKET TRYOUT
+// ============================================================
+
+enum StatusPaket {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ModelAkses {
+  GRATIS
+  BERBAYAR
+  LANGGANAN
+}
+
+model PaketTryout {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  judul       String
+  deskripsi   String      @db.Text
+  kategori    KategoriUjian
+  subKategori String? // e.g., "STAN", "IPDN" untuk Sekdin
+  durasi      Int // dalam menit
+  totalSoal   Int
+  harga       Decimal     @default(0) @db.Decimal(12, 2)
+  modelAkses  ModelAkses  @default(GRATIS)
+  status      StatusPaket @default(DRAFT)
+  passingGrade Json? // { twk: 65, tiu: 80, tkp: 166, total: 311 }
+  konfigurasi Json? // konfigurasi penilaian khusus
+  thumbnailUrl String?
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  soal          PaketTryoutSoal[]
+  sesi          TryoutSession[]
+  leaderboard   LeaderboardEntry[]
+  transaksiItem TransactionItem[]
+  bundel        BundelTryoutPaket[]
+
+  @@index([kategori])
+  @@index([status])
+  @@index([slug])
+}
+
+// ============================================================
+// DOMAIN: BUNDEL TRYOUT
+// ============================================================
+
+model BundelTryout {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  judul        String
+  deskripsi    String        @db.Text
+  kategori     KategoriUjian
+  thumbnailUrl String?
+  harga        Decimal       @db.Decimal(12, 2)
+  status       StatusPaket   @default(DRAFT)
+  createdById  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  paket         BundelTryoutPaket[]
+  transaksiItem TransactionItem[]
+
+  @@index([kategori])
+  @@index([status])
+  @@index([slug])
+}
+
+model BundelTryoutPaket {
+  id       String @id @default(cuid())
+  bundelId String
+  paketId  String
+  urutan   Int    @default(0)
+
+  bundel BundelTryout @relation(fields: [bundelId], references: [id], onDelete: Cascade)
+  paket  PaketTryout  @relation(fields: [paketId], references: [id])
+
+  @@unique([bundelId, paketId])
+  @@index([bundelId])
+}
+
+model PaketTryoutSoal {
+  id         String   @id @default(cuid())
+  paketId    String
+  soalId     String
+  urutan     Int
+  bobotNilai Decimal? @db.Decimal(5, 2)
+
+  paket PaketTryout @relation(fields: [paketId], references: [id], onDelete: Cascade)
+  soal  Soal        @relation(fields: [soalId], references: [id])
+
+  @@unique([paketId, soalId])
+  @@index([paketId])
+}
+
+// ============================================================
+// DOMAIN: SESI TRYOUT
+// ============================================================
+
+enum StatusSesi {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  ABANDONED
+}
+
+model TryoutSession {
+  id           String     @id @default(cuid())
+  userId       String
+  paketId      String
+  status       StatusSesi @default(ACTIVE)
+  startedAt    DateTime   @default(now())
+  expiresAt    DateTime
+  completedAt  DateTime?
+  lastSyncedAt DateTime   @default(now())
+  // Urutan soal yang diacak (array of soalId)
+  urutanSoal      Json // string[]
+  // Snapshot jawaban untuk recovery
+  snapshotJawaban Json   @default("{}") // { soalId: opsiId }
+  // Log aktivitas untuk anti-cheat
+  activityLog     Json   @default("[]")
+  ipAddress       String?
+  userAgent       String?
+
+  user    User           @relation(fields: [userId], references: [id])
+  paket   PaketTryout    @relation(fields: [paketId], references: [id])
+  jawaban JawabanPeserta[]
+  hasil   HasilTryout?
+
+  @@index([userId])
+  @@index([paketId])
+  @@index([status])
+}
+
+model JawabanPeserta {
+  id         String    @id @default(cuid())
+  sessionId  String
+  soalId     String
+  opsiId     String? // null jika tidak dijawab
+  isBenar    Boolean?
+  nilaiDapat Decimal?  @db.Decimal(5, 2)
+  waktuJawab Int? // detik sejak sesi dimulai
+  answeredAt DateTime  @default(now())
+
+  session TryoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  soal    Soal          @relation(fields: [soalId], references: [id])
+
+  @@unique([sessionId, soalId])
+  @@index([sessionId])
+}
+
+model HasilTryout {
+  id               String   @id @default(cuid())
+  sessionId        String   @unique
+  userId           String
+  paketId          String
+  skorTotal        Decimal  @db.Decimal(8, 2)
+  skorPerSubtes    Json // { TWK: 85, TIU: 90, TKP: 150 }
+  jumlahBenar      Int
+  jumlahSalah      Int
+  jumlahKosong     Int
+  lulus            Boolean  @default(false)
+  durasiPengerjaan Int // dalam detik
+  createdAt        DateTime @default(now())
+
+  session TryoutSession @relation(fields: [sessionId], references: [id])
+
+  @@index([userId])
+  @@index([paketId])
+}
+
+// ============================================================
+// DOMAIN: KELAS & PEMBELAJARAN
+// ============================================================
+
+enum StatusKelas {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Kelas {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  judul        String
+  deskripsi    String      @db.Text
+  kategori     KategoriUjian
+  thumbnailUrl String?
+  harga        Decimal     @default(0) @db.Decimal(12, 2)
+  modelAkses   ModelAkses  @default(GRATIS)
+  status       StatusKelas @default(DRAFT)
+  instrukturId String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  modul         Modul[]
+  liveClasses   LiveClass[]
+  enrollments   Enrollment[]
+  transaksiItem TransactionItem[]
+
+  @@index([kategori])
+  @@index([status])
+}
+
+model Modul {
+  id          String   @id @default(cuid())
+  kelasId     String
+  judul       String
+  deskripsi   String?
+  urutan      Int
+  isLocked    Boolean  @default(false)
+  isKuisAktif Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  kelas         Kelas         @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  konten        KontenModul[]
+  videoProgress VideoProgress[]
+
+  @@unique([kelasId, urutan])
+  @@index([kelasId])
+}
+
+enum TipeKonten {
+  TEKS
+  PDF
+  VIDEO
+  LINK_EKSTERNAL
+}
+
+model KontenModul {
+  id            String     @id @default(cuid())
+  modulId       String
+  tipe          TipeKonten
+  judul         String
+  konten        String?    @db.Text // untuk TEKS
+  fileUrl       String? // untuk PDF, VIDEO
+  linkUrl       String? // untuk LINK_EKSTERNAL
+  durasi        Int? // durasi video dalam detik
+  urutan        Int
+  muxAssetId    String? // Mux asset ID untuk video
+  muxPlaybackId String? // Mux playback ID
+
+  modul Modul @relation(fields: [modulId], references: [id], onDelete: Cascade)
+
+  @@index([modulId])
+}
+
+model VideoProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  modulId     String
+  posisiDetik Int      @default(0)
+  isSelesai   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id])
+  modul Modul @relation(fields: [modulId], references: [id])
+
+  @@unique([userId, modulId])
+}
+
+model Enrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  kelasId     String
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+
+  user  User  @relation(fields: [userId], references: [id])
+  kelas Kelas @relation(fields: [kelasId], references: [id])
+
+  @@unique([userId, kelasId])
+  @@index([userId])
+}
+
+// ============================================================
+// DOMAIN: LIVE CLASS
+// ============================================================
+
+enum StatusLiveClass {
+  SCHEDULED
+  LIVE
+  ENDED
+}
+
+model LiveClass {
+  id             String          @id @default(cuid())
+  kelasId        String
+  judul          String
+  deskripsi      String?
+  instrukturId   String
+  jadwalMulai    DateTime
+  durasiEstimasi Int // dalam menit
+  status         StatusLiveClass @default(SCHEDULED)
+  streamUrl      String?
+  recordingUrl   String?
+  jumlahHadir    Int             @default(0)
+  createdAt      DateTime        @default(now())
+
+  kelas        Kelas           @relation(fields: [kelasId], references: [id])
+  chatMessages LiveClassChat[]
+
+  @@index([kelasId])
+  @@index([jadwalMulai])
+}
+
+model LiveClassChat {
+  id          String   @id @default(cuid())
+  liveClassId String
+  userId      String
+  pesan       String   @db.Text
+  createdAt   DateTime @default(now())
+
+  liveClass LiveClass @relation(fields: [liveClassId], references: [id])
+
+  @@index([liveClassId])
+}
+
+// ============================================================
+// DOMAIN: PEMBAYARAN & LANGGANAN
+// ============================================================
+
+enum StatusTransaksi {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+  REFUNDED
+}
+
+enum MetodePembayaran {
+  TRANSFER_BANK
+  KARTU_KREDIT
+  GOPAY
+  OVO
+  DANA
+  QRIS
+  VIRTUAL_ACCOUNT
+}
+
+model Transaction {
+  id              String           @id @default(cuid())
+  userId          String
+  orderId         String           @unique // ID unik untuk payment gateway
+  totalAmount     Decimal          @db.Decimal(12, 2)
+  status          StatusTransaksi  @default(PENDING)
+  metode          MetodePembayaran?
+  gateway         String // "midtrans" | "xendit"
+  gatewayTxId     String? // ID transaksi dari gateway
+  gatewayResponse Json? // raw response dari gateway
+  promoId         String?
+  diskon          Decimal          @default(0) @db.Decimal(12, 2)
+  expiredAt       DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user  User              @relation(fields: [userId], references: [id])
+  items TransactionItem[]
+  promo PromoCode?        @relation(fields: [promoId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([orderId])
+}
+
+model TransactionItem {
+  id            String  @id @default(cuid())
+  transactionId String
+  tipe          String  // "PAKET_TRYOUT" | "KELAS" | "LANGGANAN" | "BUNDEL"
+  paketId       String?
+  kelasId       String?
+  langgananId   String?
+  bundelId      String?
+  nama          String
+  harga         Decimal @db.Decimal(12, 2)
+
+  transaction Transaction   @relation(fields: [transactionId], references: [id])
+  paket       PaketTryout?  @relation(fields: [paketId], references: [id])
+  kelas       Kelas?        @relation(fields: [kelasId], references: [id])
+  bundel      BundelTryout? @relation(fields: [bundelId], references: [id])
+
+  @@index([transactionId])
+}
+
+enum TipeLangganan {
+  BULANAN
+  TAHUNAN
+}
+
+model Subscription {
+  id        String        @id @default(cuid())
+  userId    String
+  tipe      TipeLangganan
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean       @default(true)
+  autoRenew Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([endDate])
+}
+
+model PromoCode {
+  id          String    @id @default(cuid())
+  kode        String    @unique
+  deskripsi   String?
+  tipeDiskon  String // "PERSEN" | "NOMINAL"
+  nilaiDiskon Decimal   @db.Decimal(10, 2)
+  batasUse    Int?
+  totalUsed   Int       @default(0)
+  expiredAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  transactions Transaction[]
+
+  @@index([kode])
+}
+
+// ============================================================
+// DOMAIN: LEADERBOARD & GAMIFIKASI
+// ============================================================
+
+enum PeriodeLeaderboard {
+  ALL_TIME
+  MINGGUAN
+  BULANAN
+}
+
+model LeaderboardEntry {
+  id        String             @id @default(cuid())
+  userId    String
+  paketId   String
+  periode   PeriodeLeaderboard
+  skor      Decimal            @db.Decimal(8, 2)
+  peringkat Int
+  sessionId String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id])
+  paket PaketTryout @relation(fields: [paketId], references: [id])
+
+  @@unique([userId, paketId, periode])
+  @@index([paketId, periode, peringkat])
+}
+
+enum TipeBadge {
+  PERINGKAT_1
+  PERINGKAT_2
+  PERINGKAT_3
+  TRYOUT_PERTAMA
+  LULUS_PASSING_GRADE
+  STREAK_7_HARI
+}
+
+model Badge {
+  id        String    @id @default(cuid())
+  nama      String
+  deskripsi String
+  ikonUrl   String
+  tipe      TipeBadge @unique
+
+  userBadges UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  paketId  String?
+  earnedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  badge Badge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId, paketId])
+}
+
+// ============================================================
+// DOMAIN: NOTIFIKASI
+// ============================================================
+
+enum TipeNotifikasi {
+  TRYOUT_RESULT
+  LIVE_CLASS_REMINDER
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  SUBSCRIPTION_EXPIRING
+  NEW_CONTENT
+  SYSTEM
+}
+
+model Notification {
+  id        String         @id @default(cuid())
+  userId    String
+  tipe      TipeNotifikasi
+  judul     String
+  pesan     String         @db.Text
+  data      Json?
+  isRead    Boolean        @default(false)
+  createdAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
