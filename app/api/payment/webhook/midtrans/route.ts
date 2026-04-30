@@ -15,7 +15,11 @@ interface MidtransWebhookPayload {
 
 export async function POST(request: NextRequest) {
   try {
-    const payload = await request.json() as MidtransWebhookPayload;
+    const raw = await request.text();
+    if (!raw) {
+      return NextResponse.json({ error: "Empty body" }, { status: 400 });
+    }
+    const payload = JSON.parse(raw) as MidtransWebhookPayload;
 
     // Verifikasi signature (keamanan)
     const isValid = verifyMidtransSignature(
