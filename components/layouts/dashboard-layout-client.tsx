@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/shared/sidebar";
 import { Navbar } from "@/components/shared/navbar";
 
@@ -20,6 +21,20 @@ export function DashboardLayoutClient({
   userRole,
 }: DashboardLayoutClientProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Cek apakah halaman saat ini adalah sesi tryout (pengerjaan soal)
+  const isTryoutSession = pathname.includes("/tryout/sesi/");
+
+  if (isTryoutSession) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-white dark:bg-gray-950">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
