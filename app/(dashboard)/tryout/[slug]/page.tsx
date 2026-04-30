@@ -36,15 +36,21 @@ export default async function DetailTryoutPage({ params }: { params: Promise<{ s
   let lastResult = null;
 
   if (session?.user?.id && !hasAccess) {
-    const [transaksi, langganan] = await Promise.all([
+    const [transaksi, transaksiBundel, langganan] = await Promise.all([
       prisma.transactionItem.findFirst({
         where: { paketId: paket.id, transaction: { userId: session.user.id, status: "SUCCESS" } },
+      }),
+      prisma.transactionItem.findFirst({
+        where: {
+          transaction: { userId: session.user.id, status: "SUCCESS" },
+          bundel: { paket: { some: { paketId: paket.id } } },
+        },
       }),
       prisma.subscription.findFirst({
         where: { userId: session.user.id, isActive: true, endDate: { gt: new Date() } },
       }),
     ]);
-    hasAccess = !!(transaksi || (langganan && paket.modelAkses === "LANGGANAN"));
+    hasAccess = !!(transaksi || transaksiBundel || (langganan && paket.modelAkses === "LANGGANAN"));
   }
 
   if (session?.user?.id) {
@@ -194,7 +200,7 @@ export default async function DetailTryoutPage({ params }: { params: Promise<{ s
                   Beli Sekarang — Rp {Number(paket.harga).toLocaleString("id-ID")}
                 </Link>
                 {process.env.NODE_ENV !== "production" && (
-                  <MockBuyButton paketId={paket.id} slug={slug} />
+                  <MockBuyButton paketId={paket.id} />
                 )}
               </div>
             )}
