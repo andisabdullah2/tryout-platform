@@ -106,34 +106,54 @@ export default async function HasilTryoutPage({
         ))}
       </div>
 
-      {/* Skor per subtes */}
+      {/* Skor per subtes - Card Layout */}
       {Object.keys(skorPerSubtes).length > 0 && (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Skor per Subtes</h3>
-          <div className="space-y-3">
+        <div className="space-y-3">
+          <h3 className="font-semibold text-gray-900 dark:text-white text-lg">Skor per Kategori</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(skorPerSubtes).map(([subtes, skor]) => {
               const pg = passingGrade?.[subtes.toLowerCase()];
               const lulus = pg ? skor >= pg : null;
               return (
-                <div key={subtes} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{subtes}</span>
+                <div key={subtes} className={`rounded-xl p-5 border-2 transition-all ${
+                  lulus === null
+                    ? "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
+                    : lulus
+                      ? "bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700"
+                      : "bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-700"
+                }`}>
+                  {/* Subtes name */}
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                    {subtes}
+                  </div>
+
+                  {/* Score */}
+                  <div className={`text-4xl font-bold mb-2 ${
+                    lulus === null
+                      ? "text-blue-600 dark:text-blue-400"
+                      : lulus
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-red-600 dark:text-red-400"
+                  }`}>
+                    {typeof skor === "number" ? skor.toFixed(0) : skor}
+                  </div>
+
+                  {/* Passing grade & status */}
+                  <div className="flex items-center justify-between">
+                    {pg && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Min. {pg}
+                      </span>
+                    )}
                     {lulus !== null && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                        lulus ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
-                              : "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400"
+                      <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                        lulus
+                          ? "bg-green-200 dark:bg-green-900 text-green-700 dark:text-green-300"
+                          : "bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300"
                       }`}>
                         {lulus ? "✓ Lulus" : "✗ Tidak Lulus"}
                       </span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {pg && (
-                      <span className="text-xs text-gray-400">min. {pg}</span>
-                    )}
-                    <span className="font-bold text-gray-900 dark:text-white text-lg">
-                      {typeof skor === "number" ? skor.toFixed(0) : skor}
-                    </span>
                   </div>
                 </div>
               );

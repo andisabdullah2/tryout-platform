@@ -28,6 +28,18 @@ export async function POST(request: NextRequest) {
     const { paketId } = validation.data;
     const userId = session.user.id;
 
+    // Verify user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "User tidak ditemukan. Silakan login ulang." },
+        { status: 404 }
+      );
+    }
+
     // Ambil paket tryout
     const paket = await prisma.paketTryout.findUnique({
       where: { id: paketId, status: "PUBLISHED" },

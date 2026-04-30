@@ -88,21 +88,43 @@ interface SidebarProps {
   userEmail?: string;
   userImage?: string;
   userRole?: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ userName, userEmail, userRole }: SidebarProps) {
+export function Sidebar({ userName, userEmail, userRole, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full">
+    <aside className={`
+      fixed lg:static inset-y-0 left-0 z-50
+      w-64 flex-shrink-0
+      bg-white dark:bg-gray-900
+      border-r border-gray-200 dark:border-gray-800
+      flex flex-col h-full
+      transform transition-transform duration-300 ease-in-out
+      ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+    `}>
       {/* Logo */}
-      <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+      <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <span className="text-2xl">🎯</span>
           <span className="font-bold text-gray-900 dark:text-white">
             TryoutPlatform
           </span>
         </Link>
+        {/* Close button - mobile only */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Close menu"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* User info */}
@@ -138,6 +160,7 @@ export function Sidebar({ userName, userEmail, userRole }: SidebarProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={() => onClose?.()}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
@@ -165,6 +188,7 @@ export function Sidebar({ userName, userEmail, userRole }: SidebarProps) {
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
             <Link
               href="/admin"
+              onClick={() => onClose?.()}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

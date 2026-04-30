@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
-export const metadata = { title: "Riwayat Transaksi" };
+export const metadata = { title: "Riwayat & Tryout" };
 
 const STATUS_BADGE: Record<string, string> = {
   PENDING: "bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300",
@@ -21,7 +22,7 @@ export default async function RiwayatPage() {
   const session = await auth();
   if (!session?.user?.id) notFound();
 
-  const [transactions, subscription] = await Promise.all([
+  const [transactions, subscription, hasilTryout] = await Promise.all([
     prisma.transaction.findMany({
       where: { userId: session.user.id },
       include: { items: true },
@@ -31,13 +32,39 @@ export default async function RiwayatPage() {
       where: { userId: session.user.id, isActive: true, endDate: { gt: new Date() } },
       orderBy: { endDate: "desc" },
     }),
+    prisma.hasilTryout.findMany({
+      where: { userId: session.user.id },
+      include: {
+        session: {
+          include: {
+            paket: {
+              select: {
+                id: true,
+                slug: true,
+                judul: true,
+                kategori: true,
+                passingGrade: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
   ]);
+
+  const KATEGORI_LABEL: Record<string, string> = {
+    CPNS_SKD: "CPNS / SKD",
+    SEKDIN: "Sekolah Kedinasan",
+    UTBK_SNBT: "UTBK / SNBT",
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Riwayat & Langganan</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Kelola pembelian dan langganan Anda</p>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Kelola pembelian, langganan, dan hasil tryout Anda</p>
       </div>
 
       {/* Status langganan */}
@@ -59,6 +86,100 @@ export default async function RiwayatPage() {
           </div>
         </div>
       )}
+
+      {/* Riwayat Tryout */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="font-semibold text-gray-900 dark:text-white">Riwayat Tryout</h2>
+        </div>
+
+        {hasilTryout.length === 0 ? (
+          <div className="py-12 text-center text-gray-400">
+            <div className="text-4xl mb-3">📝</div>
+            <p>Belum ada riwayat tryout</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {hasilTryout.map((hasil) => {
+              const paket = hasil.session.paket;
+              const skorPerSubtes = hasil.skorPerSubtes as Record<string, number>;
+              const passingGrade = paket.passingGrade as Record<string, number> | null;
+
+              return (
+                <Link
+                  key={hasil.id}
+                  href={`/tryout/sesi/${hasil.sessionId}/hasil`}
+                  className="block px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium text-gray-900 dark:text-white truncate">
+                          {paket.judul}
+                        </h3>
+                        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full flex-shrink-0">
+                          {KATEGORI_LABEL[paket.kategori] ?? paket.kategori}
+                        </span>
+                      </div>
+
+                      {/* Score breakdown mini */}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {Object.entries(skorPerSubtes).map(([subtes, skor]) => {
+                          const pg = passingGrade?.[subtes.toLowerCase()];
+                          const lulus = pg ? skor >= pg : null;
+                          return (
+                            <div key={subtes} className="text-xs">
+                              <span className="text-gray-500 dark:text-gray-400">{subtes}:</span>{" "}
+                              <span className={`font-semibold ${
+                                lulus === null ? "text-gray-900 dark:text-white"
+                                  : lulus ? "text-green-600 dark:text-green-400"
+                                  : "text-red-600 dark:text-red-400"
+                              }`}>
+                                {typeof skor === "number" ? skor.toFixed(0) : skor}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                        <span>
+                          {new Date(hasil.createdAt).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                        <span>•</span>
+                        <span>{hasil.jumlahBenar} benar</span>
+                        <span>•</span>
+                        <span>{Math.floor(hasil.durasiPengerjaan / 60)} menit</span>
+                      </div>
+                    </div>
+
+                    <div className="text-right flex-shrink-0">
+                      <div className={`text-2xl font-bold mb-1 ${
+                        hasil.lulus
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-gray-900 dark:text-white"
+                      }`}>
+                        {Number(hasil.skorTotal).toFixed(0)}
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        hasil.lulus
+                          ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                      }`}>
+                        {hasil.lulus ? "✓ Lulus" : "Belum Lulus"}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Riwayat transaksi */}
       <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
