@@ -101,17 +101,30 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Siapkan item untuk Midtrans
+    const snapItems = items.map((item) => ({
+      id: item.id,
+      name: item.nama.substring(0, 50),
+      price: item.harga,
+      quantity: 1,
+    }));
+
+    // Tambahkan diskon sebagai item negatif jika ada
+    if (promoResult.diskonDiterapkan > 0) {
+      snapItems.push({
+        id: "PROMO",
+        name: `Diskon: ${promoCode}`,
+        price: -promoResult.diskonDiterapkan,
+        quantity: 1,
+      });
+    }
+
     // Buat Midtrans Snap transaction
     const snapResult = await createSnapTransaction({
       orderId,
       amount: totalAmount,
       customer: { name: user.name, email: user.email, phone: user.phone ?? undefined },
-      items: items.map((item) => ({
-        id: item.id,
-        name: item.nama.substring(0, 50),
-        price: item.harga,
-        quantity: 1,
-      })),
+      items: snapItems,
     }) as { token: string; redirect_url: string };
 
     // Update transaction dengan gateway response
