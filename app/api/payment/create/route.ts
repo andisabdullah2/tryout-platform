@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const orderId = `TRX-${nanoid(10).toUpperCase()}`;
+    const timestamp = new Date().getTime();
+    const orderId = `TRX-${timestamp}-${nanoid(5).toUpperCase()}`;
 
     // Buat transaksi di database
     const transaction = await prisma.transaction.create({

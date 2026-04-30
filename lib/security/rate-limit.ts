@@ -1,4 +1,4 @@
-import { getRedis } from "@/lib/redis";
+import { getRedis, isRedisConfigured } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
 
 interface RateLimitConfig {
@@ -36,6 +36,7 @@ export async function rateLimit(
   const key = `ratelimit:${typeof type === "string" ? type : "custom"}:${ip}`;
 
   try {
+    if (!isRedisConfigured()) return null;
     const redis = getRedis();
     const now = Date.now();
     const windowStart = now - config.windowSeconds * 1000;
