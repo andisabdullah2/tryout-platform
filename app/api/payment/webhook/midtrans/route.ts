@@ -26,6 +26,11 @@ export async function POST(request: NextRequest) {
     );
 
     if (!isValid) {
+      console.error("Midtrans Webhook: Invalid Signature", {
+        orderId: payload.order_id,
+        received: payload.signature_key,
+        serverKeyPrefix: process.env.MIDTRANS_SERVER_KEY?.substring(0, 7)
+      });
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
