@@ -2,20 +2,12 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-async function main() {
+export async function seedSoal(createdById: string) {
   console.log("🌱 Seeding contoh soal...");
 
-  // Ambil instruktur untuk createdById
-  const instruktur = await prisma.user.findFirst({
-    where: { role: "INSTRUKTUR" },
-    select: { id: true },
-  });
-
-  if (!instruktur) {
-    throw new Error("Instruktur tidak ditemukan. Jalankan seed utama terlebih dahulu.");
+  if (!createdById) {
+    throw new Error("createdById (Instruktur ID) is required for seeding soal.");
   }
-
-  const createdById = instruktur.id;
 
   // ============================================================
   // SOAL TWK (Tes Wawasan Kebangsaan) — CPNS SKD
@@ -384,11 +376,21 @@ async function main() {
   console.log(`\n🎉 Total ${totalDibuat} soal berhasil dibuat!`);
 }
 
-main()
-  .catch((e) => {
-    console.error("❌ Seed soal gagal:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+if (require.main === module) {
+  async function run() {
+    const instruktur = await prisma.user.findFirst({
+      where: { role: "INSTRUKTUR" },
+      select: { id: true },
+    });
+    if (!instruktur) throw new Error("Instruktur not found");
+    await seedSoal(instruktur.id);
+  }
+  run()
+    .catch((e) => {
+      console.error("❌ Seed soal gagal:", e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

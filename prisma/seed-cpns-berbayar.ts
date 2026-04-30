@@ -1,11 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-async function main() {
+export async function seedCpnsBerbayar(cid: string) {
   console.log("Seeding paket CPNS SKD berbayar...");
-  const instruktur = await prisma.user.findFirst({ where: { role: "INSTRUKTUR" }, select: { id: true } });
-  if (!instruktur) throw new Error("Jalankan seed utama dulu.");
-  const cid = instruktur.id;
+  if (!cid) {
+    throw new Error("cid (Instruktur ID) is required for seeding paket berbayar.");
+  }
   const soalIds: string[] = [];
 
   async function buatSoal(konten: string, topik: string, tk: string, pem: string, subtes: string, opsi: {label:string;konten:string;isBenar:boolean;nilaiTkp?:number}[]) {
@@ -65,6 +65,13 @@ async function main() {
   console.log("Selesai!");
 }
 
-main()
-  .catch((e) => { console.error("Error:", e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
+if (require.main === module) {
+  async function run() {
+    const instruktur = await prisma.user.findFirst({ where: { role: "INSTRUKTUR" }, select: { id: true } });
+    if (!instruktur) throw new Error("Instruktur not found");
+    await seedCpnsBerbayar(instruktur.id);
+  }
+  run()
+    .catch((e) => { console.error("Error:", e); process.exit(1); })
+    .finally(() => prisma.$disconnect());
+}

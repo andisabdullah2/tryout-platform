@@ -1,6 +1,8 @@
 import { PrismaClient, Role, TipeBadge } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { seedKelasCPNS } from "./seed-kelas-cpns";
+import { seedSoal } from "./seed-soal";
+import { seedCpnsBerbayar } from "./seed-cpns-berbayar";
 
 const prisma = new PrismaClient();
 
@@ -198,9 +200,19 @@ async function main() {
   );
 
   // ============================================================
+  // SEED: Soal Dasar (imported from seed-soal.ts)
+  // ============================================================
+  await seedSoal(instruktur.id);
+
+  // ============================================================
   // SEED: Kelas CPNS (imported from seed-kelas-cpns.ts)
   // ============================================================
   await seedKelasCPNS(instruktur.id);
+
+  // ============================================================
+  // SEED: Paket CPNS Berbayar (imported from seed-cpns-berbayar.ts)
+  // ============================================================
+  await seedCpnsBerbayar(instruktur.id);
 
   // ============================================================
   // SEED: Promo Code
