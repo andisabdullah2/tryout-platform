@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { acakUrutanSoal } from "@/lib/tryout/shuffle";
+import { acakUrutanSoalPerSubtes } from "@/lib/tryout/shuffle";
 
 const startSesiSchema = z.object({
   paketId: z.string().min(1),
@@ -124,9 +124,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Acak urutan soal (Property 10)
-    const soalIds = paket.soal.map((ps) => ps.soal.id);
-    const urutanSoalAcak = acakUrutanSoal(soalIds);
+    // Acak urutan soal per subtes (TWK→TIU→TKP), shuffle within each group
+    const urutanSoalAcak = acakUrutanSoalPerSubtes(
+      paket.soal.map((ps) => ({ id: ps.soal.id, subtes: ps.soal.subtes }))
+    );
 
     // Acak opsi jawaban per soal
     const soalDenganOpsiAcak = paket.soal.map((ps) => {
