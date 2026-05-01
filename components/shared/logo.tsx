@@ -27,6 +27,7 @@ export function Logo({
         width={iconSize}
         height={iconSize}
         priority
+        unoptimized
       />
       {showText && (
         <span className="flex flex-col leading-none gap-[3px]">
