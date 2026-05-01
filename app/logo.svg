@@ -1,0 +1,19 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="white"/>
+
+  <!-- Outer rounded square background -->
+  <rect x="10" y="10" width="180" height="180" rx="36" fill="#111827"/>
+
+  <!-- Inner blue block, slightly tilted -->
+  <g transform="translate(100,100)">
+    <rect x="-72" y="-72" width="144" height="144" rx="24" fill="#1D4ED8" transform="rotate(6)"/>
+
+    <!-- T horizontal bar -->
+    <rect x="-44" y="-36" width="88" height="18" rx="6" fill="white"/>
+    <!-- T vertical bar -->
+    <rect x="-14" y="-18" width="28" height="60" rx="6" fill="white"/>
+
+    <!-- Yellow dot accent -->
+    <circle cx="42" cy="48" r="11" fill="#FACC15"/>
+  </g>
+</svg>

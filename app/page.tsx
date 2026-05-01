@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { Logo } from "@/components/shared/logo";
 
 export default async function HomePage() {
   const session = await auth();
@@ -56,12 +57,7 @@ export default async function HomePage() {
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl">🎯</span>
-              <span className="font-bold text-gray-900 dark:text-white text-lg">
-                TryoutPlatform
-              </span>
-            </Link>
+            <Logo href="/" iconSize={36} />
 
             <div className="hidden md:flex items-center gap-6">
               <Link
@@ -268,11 +264,8 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-2xl">🎯</span>
-                <span className="font-bold text-white text-lg">
-                  TryoutPlatform
-                </span>
+              <div className="mb-4">
+                <Logo href="/" iconSize={36} textColor="light" />
               </div>
               <p className="text-sm leading-relaxed">
                 Platform tryout online dan pembelajaran terpercaya untuk
@@ -321,7 +314,7 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-            © {new Date().getFullYear()} TryoutPlatform. Hak cipta dilindungi.
+            © {new Date().getFullYear()} Tryout Learning. Hak cipta dilindungi.
           </div>
         </div>
       </footer>

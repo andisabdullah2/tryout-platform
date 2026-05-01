@@ -7,17 +7,22 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    default: "Platform Tryout & Belajar",
-    template: "%s | Platform Tryout & Belajar",
+    default: "TryoutLearning",
+    template: "%s | TryoutLearning",
   },
   description:
     "Platform tryout online dan pembelajaran untuk persiapan CPNS, Sekdin, dan UTBK/SNBT",
   keywords: ["tryout", "CPNS", "UTBK", "SNBT", "Sekdin", "belajar online", "SKD"],
-  authors: [{ name: "Platform Tryout & Belajar" }],
+  authors: [{ name: "TryoutLearning" }],
+  icons: {
+    icon: [
+      { url: "/logo-icon.svg", type: "image/svg+xml" },
+    ],
+  },
   openGraph: {
     type: "website",
     locale: "id_ID",
-    title: "Platform Tryout & Belajar",
+    title: "TryoutLearning",
     description:
       "Platform tryout online dan pembelajaran untuk persiapan CPNS, Sekdin, dan UTBK/SNBT",
   },

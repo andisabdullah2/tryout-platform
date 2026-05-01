@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { Logo } from "@/components/shared/logo";
 
 const adminNavItems = [
   {
@@ -119,13 +120,7 @@ export function AdminSidebar({ userName, userEmail }: AdminSidebarProps) {
     <aside className="w-64 flex-shrink-0 bg-gray-900 text-white flex flex-col h-full">
       {/* Logo */}
       <div className="px-6 py-5 border-b border-gray-800">
-        <Link href="/admin" className="flex items-center gap-2">
-          <span className="text-2xl">🎯</span>
-          <div>
-            <div className="font-bold text-white text-sm">TryoutPlatform</div>
-            <div className="text-xs text-gray-400">Panel Admin</div>
-          </div>
-        </Link>
+        <Logo href="/admin" iconSize={36} textColor="light" />
       </div>
 
       {/* User info */}

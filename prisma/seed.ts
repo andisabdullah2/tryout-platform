@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { seedKelasCPNS } from "./seed-kelas-cpns";
 import { seedSoal } from "./seed-soal";
 import { seedCpnsBerbayar } from "./seed-cpns-berbayar";
+import { seedLeaderboard } from "./seed-leaderboard";
 
 const prisma = new PrismaClient();
 
@@ -243,6 +244,11 @@ async function main() {
     },
   });
   console.log(`✅ Promo codes created`);
+
+  // ============================================================
+  // SEED: Leaderboard — 950 random peserta across all pakets
+  // ============================================================
+  await seedLeaderboard(instruktur.id);
 
   console.log("🎉 Seed completed successfully!");
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { Logo } from "@/components/shared/logo";
 
 interface NavItem {
   href: string;
@@ -107,12 +108,7 @@ export function Sidebar({ userName, userEmail, userRole, isOpen, onClose }: Side
     `}>
       {/* Logo */}
       <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl">🎯</span>
-          <span className="font-bold text-gray-900 dark:text-white">
-            TryoutPlatform
-          </span>
-        </Link>
+        <Logo href="/" />
         {/* Close button - mobile only */}
         {onClose && (
           <button
