@@ -21,13 +21,11 @@ export function Logo({
 
   const content = (
     <span className={`flex items-center gap-3 ${className}`}>
-      <Image
+      <img
         src="/logo-icon.svg"
         alt="TryoutLearning"
         width={iconSize}
         height={iconSize}
-        priority
-        unoptimized
       />
       {showText && (
         <span className="flex flex-col leading-none gap-[3px]">

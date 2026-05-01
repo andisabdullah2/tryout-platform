@@ -14,11 +14,7 @@ export const metadata: Metadata = {
     "Platform tryout online dan pembelajaran untuk persiapan CPNS, Sekdin, dan UTBK/SNBT",
   keywords: ["tryout", "CPNS", "UTBK", "SNBT", "Sekdin", "belajar online", "SKD"],
   authors: [{ name: "TryoutLearning" }],
-  icons: {
-    icon: [
-      { url: "/logo-icon.svg", type: "image/svg+xml" },
-    ],
-  },
+
   openGraph: {
     type: "website",
     locale: "id_ID",
